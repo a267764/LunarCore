@@ -12,7 +12,6 @@ import java.util.Map;
 
 import emu.lunarcore.GameConstants;
 import emu.lunarcore.LunarCore;
-import emu.lunarcore.command.Command;
 import emu.lunarcore.data.GameData;
 import emu.lunarcore.data.excel.*;
 
@@ -46,17 +45,6 @@ public class Handbook {
             // Header
             writer.println("# Lunar Core " + GameConstants.VERSION + " Handbook");
             writer.println("# Created " + dtf.format(now));
-
-            // Dump commands
-            writer.println(System.lineSeparator());
-            writer.println("# Commands");
-            var labels = LunarCore.getCommandManager().getLabels().keySet().stream().sorted().toList();
-            for (var label : labels) {
-                Command command = LunarCore.getCommandManager().getLabels().get(label).getClass().getAnnotation(Command.class);
-                if (command == null) continue;
-
-                writer.println(command.desc());
-            }
 
             // Dump avatars
             writer.println(System.lineSeparator());
