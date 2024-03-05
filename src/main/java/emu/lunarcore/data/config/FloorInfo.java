@@ -71,8 +71,6 @@ public class FloorInfo {
                     // Hacky way to setup prop triggers
                     if (json.contains("Maze_GroupProp_OpenTreasure_WhenMonsterDie")) {
                         prop.setTrigger(new TriggerOpenTreasureWhenMonsterDie(group.getId()));
-                    } else if (json.contains("Common_Console")) {
-                        prop.setCommonConsole(true);
                     }
                     
                     // Clear for garbage collection
@@ -88,7 +86,6 @@ public class FloorInfo {
     @Getter
     public static class FloorGroupSimpleInfo {
         private String GroupPath;
-        private boolean IsDelete;
         private int ID;
     }
 }
