@@ -17,7 +17,6 @@ import org.slf4j.LoggerFactory;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-import emu.lunarcore.command.CommandManager;
 import emu.lunarcore.data.ResourceLoader;
 import emu.lunarcore.database.DatabaseManager;
 import emu.lunarcore.server.game.GameServer;
@@ -37,13 +36,12 @@ public class LunarCore {
     @Getter private static HttpServer httpServer;
     @Getter private static GameServer gameServer;
 
-    @Getter private static CommandManager commandManager;
     @Getter private static PluginManager pluginManager;
     @Getter private static ServerType serverType = ServerType.BOTH;
 
     private static LineReaderImpl reader;
     @Getter private static boolean usingDumbTerminal;
-    
+
     private static long timeOffset = 0;
 
     static {
@@ -70,9 +68,6 @@ public class LunarCore {
         LunarCore.getLogger().info("Game version: " + GameConstants.VERSION);
         boolean generateHandbook = true;
 
-        // Load commands
-        LunarCore.commandManager = new CommandManager();
-        
         // Load plugin manager
         LunarCore.pluginManager = new PluginManager();
 
@@ -138,7 +133,7 @@ public class LunarCore {
         } catch (Exception exception) {
             LunarCore.getLogger().error("Unable to start the game server.", exception);
         }
-        
+
         // Hook into shutdown event
         Runtime.getRuntime().addShutdownHook(new Thread(LunarCore::onShutdown));
 
@@ -186,12 +181,12 @@ public class LunarCore {
         } catch (Exception e) {
             // Ignored
         }
-        
+
         // Sanity check
         if (LunarCore.getConfig() == null) {
             LunarCore.config = new Config();
         }
-        
+
         // Save config
         LunarCore.saveConfig();
     }
@@ -203,7 +198,7 @@ public class LunarCore {
                     .setPrettyPrinting()
                     .serializeNulls()
                     .create();
-            
+
             file.write(gson.toJson(config));
         } catch (Exception e) {
             getLogger().error("Config save error");
@@ -211,7 +206,7 @@ public class LunarCore {
     }
 
     // Build Config
-    
+
     private static String getJarVersion() {
         // Safely get the build config class without errors even if it hasnt been generated yet
         try {
@@ -220,50 +215,50 @@ public class LunarCore {
         } catch (Exception e) {
             // Ignored
         }
-        
+
         return "";
     }
 
     private static String getGitHash() {
         // Use a string builder in case one of the build config fields are missing
         StringBuilder builder = new StringBuilder();
-        
+
         // Safely get the build config class without errors even if it hasnt been generated yet
         try {
             SimpleDateFormat sf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
             Class<?> buildConfig = Class.forName(LunarCore.class.getPackageName() + ".BuildConfig");
-            
+
             String hash = buildConfig.getField("GIT_HASH").get(null).toString();
             builder.append(hash);
-            
+
             String timestamp = buildConfig.getField("GIT_TIMESTAMP").get(null).toString();
             long time = Long.parseLong(timestamp) * 1000;
             builder.append(" (" + sf.format(new Date(time)) + ")");
         } catch (Exception e) {
             // Ignored
         }
-        
+
         if (builder.isEmpty()) {
             return "";
         } else {
             return builder.toString();
         }
     }
-    
+
     /**
      * Returns the current server's time in milliseconds to send to the client. Can be used to spoof server time.
      */
     public static long currentServerTime() {
         return convertToServerTime(System.currentTimeMillis());
     }
-    
+
     /**
      * Converts a timestamp (in milliseconds) to the server time
      */
     public static long convertToServerTime(long time) {
         return time + timeOffset;
     }
-    
+
     private static void updateServerTimeOffset() {
         var timeOptions = LunarCore.getConfig().getServerTime();
         if (timeOptions.isSpoofTime() && timeOptions.getSpoofDate() != null) {
@@ -282,8 +277,6 @@ public class LunarCore {
                 if (input == null || input.length() == 0) {
                     continue;
                 }
-
-                LunarCore.getCommandManager().invoke(null, input);
             }
         } catch (UserInterruptException | EndOfFileException e) {
             // CTRL + C / CTRL + D
