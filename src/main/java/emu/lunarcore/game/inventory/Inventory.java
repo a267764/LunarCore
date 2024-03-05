@@ -117,12 +117,6 @@ public class Inventory extends BasePlayerManager {
     }
 
     public boolean addItem(GameItem item) {
-        // Set excel in case its missing
-        if (item.getExcel() == null) {
-            item.setExcel(GameData.getItemExcelMap().get(item.getItemId()));
-        }
-        
-        // Put item into inventory
         GameItem result = putItem(item);
 
         if (result != null) {
@@ -133,27 +127,18 @@ public class Inventory extends BasePlayerManager {
         return false;
     }
     
-    /**
-     * Adds all items from this list to the inventory.
-     * @param items List of items to add
-     * @return List of items that were added.
-     */
-    public List<GameItem> addItems(List<GameItem> items) {
+    public List<GameItem> addItems(Collection<GameItem> items) {
         return addItems(items, false);
     }
     
-    /**
-     * Adds all items from this list to the inventory.
-     * @param items List of items to add
-     * @param showHint Whether or not to notify the player that items were added
-     * @return List of items that were added.
-     */
-    public List<GameItem> addItems(List<GameItem> items, boolean showHint) {
+    public List<GameItem> addItems(Collection<GameItem> items, boolean showHint) {
         // Init results
         List<GameItem> results = new ArrayList<>(items.size());
         
-        // Sanity check
-        if (items.size() == 0) return results;
+        // Sanity
+        if (items.size() == 0) {
+            return results;
+        }
         
         // Add to inventory
         for (GameItem item : items) {
@@ -171,16 +156,7 @@ public class Inventory extends BasePlayerManager {
             }
         }
         
-        return items;
-    }
-    
-    /**
-     * Adds all items from this item param map to the inventory.
-     * @param map A map of item ids/amounts
-     * @return List of items that were added.
-     */
-    public List<GameItem> addItems(ItemParamMap map) {
-        return addItems(map.toItemList(), false);
+        return results;
     }
     
     public List<GameItem> addItemParams(Collection<ItemParam> params) {
@@ -331,30 +307,25 @@ public class Inventory extends BasePlayerManager {
         List<GameItem> results = new ArrayList<GameItem>(items.size());
         
         for (ItemParam param : items) {
-            // Remove virtual items first
-            if (param.getType() == ItemParamType.PILE) {
-                if (param.getId() == GameConstants.MATERIAL_COIN_ID) {
-                    // Remove credits
-                    getPlayer().addSCoin(-param.getCount() * multiplier);
-                    continue;
-                } else if (param.getId() == GameConstants.MATERIAL_HCOIN_ID) {
-                    // Remove credits
-                    getPlayer().addHCoin(-param.getCount() * multiplier);
-                    continue;
-                } else if (param.getId() == GameConstants.ROGUE_TALENT_POINT_ITEM_ID) {
-                    // Remove credits
-                    getPlayer().addTalentPoints(-param.getCount() * multiplier);
-                    continue;
+            // Check param type
+            if (param.getId() == GameConstants.MATERIAL_COIN_ID) {
+                // Remove credits
+                getPlayer().addSCoin(-param.getCount() * multiplier);
+            } else if (param.getId() == GameConstants.MATERIAL_HCOIN_ID) {
+                // Remove credits
+                getPlayer().addHCoin(-param.getCount() * multiplier);
+            } else if (param.getId() == GameConstants.ROGUE_TALENT_POINT_ITEM_ID) {
+                // Remove credits
+                getPlayer().addTalentPoints(-param.getCount() * multiplier);
+            } else {
+                // Remove param items
+                GameItem item = this.getItemByParam(param);
+                if (item == null) continue;
+                
+                GameItem result = this.deleteItem(item, param.getCount() * multiplier);
+                if (result != null) {
+                    results.add(result);
                 }
-            }
-            
-            // Remove param items
-            GameItem item = this.getItemByParam(param);
-            if (item == null) continue;
-            
-            GameItem result = this.deleteItem(item, param.getCount() * multiplier);
-            if (result != null) {
-                results.add(result);
             }
         }
         

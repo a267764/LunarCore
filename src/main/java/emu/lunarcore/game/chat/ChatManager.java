@@ -22,11 +22,11 @@ public class ChatManager extends BasePlayerManager {
         super(player);
         this.history = new Int2ObjectOpenHashMap<>();
     }
-    
+
     public Collection<ChatMessage> getHistoryByUid(int uid) {
         return getHistory().get(uid);
     }
-    
+
     public void addChatMessage(ChatMessage message) {
         // Get sender
         int targetPlayerUid = this.getPlayer().getUid() == message.getToUid() ? message.getFromUid() : message.getToUid();
@@ -50,12 +50,6 @@ public class ChatManager extends BasePlayerManager {
             return;
         }
 
-        // Check if command
-        if (text.charAt(0) == '!' || text.charAt(0) == '/') {
-            LunarCore.getCommandManager().invoke(getPlayer(), text);
-            return;
-        }
-
         // Get target
         Player target = getPlayer().getServer().getOnlinePlayerByUid(targetUid);
 
@@ -65,7 +59,7 @@ public class ChatManager extends BasePlayerManager {
 
         // Create chat packet
         ChatMessage message = new ChatMessage(this.getPlayer().getUid(), targetUid, text);
-        
+
         // Send to both players
         this.addChatMessage(message);
         target.getChatManager().addChatMessage(message);
@@ -81,10 +75,10 @@ public class ChatManager extends BasePlayerManager {
 
         // Create chat packet
         ChatMessage message = new ChatMessage(this.getPlayer().getUid(), targetUid, emote);
-        
+
         // Send to both players
         this.addChatMessage(message);
         target.getChatManager().addChatMessage(message);
     }
-    
+
 }

@@ -1,17 +1,11 @@
 package emu.lunarcore.game.rogue;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-import emu.lunarcore.data.GameData;
 import emu.lunarcore.data.GameDepot;
 import emu.lunarcore.data.excel.RogueBuffExcel;
-import emu.lunarcore.proto.ItemCostListOuterClass.ItemCostList;
-import emu.lunarcore.proto.ItemCostOuterClass.ItemCost;
-import emu.lunarcore.proto.PileItemOuterClass.PileItem;
-import emu.lunarcore.proto.RogueCommonBuffSelectInfoOuterClass.RogueCommonBuffSelectInfo;
+import emu.lunarcore.proto.RogueBuffSelectInfoOuterClass.RogueBuffSelectInfo;
 import emu.lunarcore.util.WeightedList;
 import lombok.Getter;
 
@@ -27,31 +21,25 @@ public class RogueBuffSelectMenu {
     
     // Cache
     private transient WeightedList<RogueBuffExcel> randomBuffs;
-    private transient Set<RogueBuffData> allRandomBuffs;
     
     @Deprecated // Morphia only!
     public RogueBuffSelectMenu() {}
     
     public RogueBuffSelectMenu(RogueInstance rogue) {
-        this(rogue, false, GameData.getRogueBuffGroupExcelMap().get(110002).getRogueBuffList());
+        this(rogue, false);
     }
     
-    public RogueBuffSelectMenu(RogueInstance rogue, boolean generateAeonBuffs, Set<RogueBuffData> buffs) {
+    public RogueBuffSelectMenu(RogueInstance rogue, boolean generateAeonBuffs) {
         this.rogue = rogue;
         this.maxBuffs = 3;
         this.maxRerolls = rogue.getBaseRerolls();
         this.buffs = new ArrayList<>();
-        this.allRandomBuffs = buffs;
         
         if (generateAeonBuffs) {
             this.generateAeonBuffs();
         } else {
             this.generateRandomBuffs();
         }
-    }
-    
-    public RogueBuffSelectMenu(RogueInstance rogue, boolean generateAeonBuffs) {
-        this(rogue, generateAeonBuffs, new HashSet<>());
     }
     
     public void setMaxRerolls(int i) {
@@ -71,19 +59,19 @@ public class RogueBuffSelectMenu {
         if (this.randomBuffs == null) {
             this.randomBuffs = new WeightedList<>();
             
-            for (var excel : this.getAllRandomBuffs()) {
-                if (rogue.getBuffs().containsKey(excel.getExcel().getMazeBuffID())) {
+            for (var excel : GameDepot.getRogueRandomBuffList()) {
+                if (rogue.getBuffs().containsKey(excel.getMazeBuffID())) {
                     continue;
                 }
                 
                 // Calculate buff weights
-                double weight = 10.0 / excel.getExcel().getRogueBuffRarity();
+                double weight = 10.0 / excel.getRogueBuffRarity();
                 
-                if (getRogue().getAeonBuffType() == excel.getExcel().getRogueBuffType()) {
+                if (getRogue().getAeonBuffType() == excel.getRogueBuffType()) {
                     weight *= 2;
                 }
                 
-                this.randomBuffs.add(weight, excel.getExcel());
+                this.randomBuffs.add(weight, excel);
             };
         }
         
@@ -93,8 +81,6 @@ public class RogueBuffSelectMenu {
             var excel = this.randomBuffs.next();
             this.getBuffs().add(new RogueBuffData(excel.getMazeBuffID(), 1));
         }
-        
-        this.hint += 1;
     }
     
     private void generateAeonBuffs() {
@@ -128,11 +114,9 @@ public class RogueBuffSelectMenu {
         this.rogue = rogue;
     }
     
-    public RogueCommonBuffSelectInfo toProto() {
-        var proto = RogueCommonBuffSelectInfo.newInstance()
-                .setSelectBuffSourceHint(this.getHint())
-                .setSourceCurCount(1)
-                .setSourceTotalCount(1);
+    public RogueBuffSelectInfo toProto() {
+        var proto = RogueBuffSelectInfo.newInstance()
+                .setSelectBuffSourceHint(this.getHint());
         
         if (this.getMaxRerolls() > 0) {
             proto.setCanRoll(true);
@@ -141,16 +125,11 @@ public class RogueBuffSelectMenu {
         }
         
         for (var buff : this.getBuffs()) {
-            proto.addMazeBuffList(buff.toCommonProto());
-            proto.addHandbookUnlockBuffIdList(buff.getId());
+            proto.addMazeBuffList(buff.toProto());
         }
         
         // Create item list for reroll cost
-        proto.setRollBuffsCost(ItemCostList.newInstance()
-            .addItemList(ItemCost.newInstance()
-                .setPileItem(PileItem.newInstance()
-                    .setItemId(31)
-                    .setItemNum(30))));
+        proto.getMutableRollBuffsCost();
         
         return proto;
     }

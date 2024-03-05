@@ -6,7 +6,6 @@ import emu.lunarcore.GameConstants;
 import emu.lunarcore.LunarCore;
 import emu.lunarcore.data.GameData;
 import emu.lunarcore.data.excel.ItemExcel;
-import emu.lunarcore.game.inventory.ItemParamMap;
 import emu.lunarcore.util.Utils;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import it.unimi.dsi.fastutil.ints.IntList;
@@ -73,7 +72,7 @@ public class DropParam {
         return this.maxCount;
     }
     
-    public void roll(ItemParamMap drops) {
+    public void roll(DropMap drops) {
         // Check drop chance
         if (this.chance < 1000) {
             int random = Utils.randomRange(0, 999);

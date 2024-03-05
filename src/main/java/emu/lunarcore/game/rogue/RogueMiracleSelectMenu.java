@@ -35,7 +35,7 @@ public class RogueMiracleSelectMenu {
             this.randomMiracles = new WeightedList<>();
             
             for (var excel : GameDepot.getRogueRandomMiracleList()) {
-                if (rogue.getMiracles().containsKey(excel.getMiracleID())) {
+                if (rogue.getBuffs().containsKey(excel.getMiracleID())) {
                     continue;
                 }
                 
@@ -59,7 +59,7 @@ public class RogueMiracleSelectMenu {
         var proto = RogueMiracleSelectInfo.newInstance();
 
         for (var miracle : this.getMiracles()) {
-            proto.addAllMiracleInfo(miracle.getId());
+            proto.addAllMiracleIdList(miracle.getId());
         }
         
         return proto;

@@ -1,7 +1,5 @@
 package emu.lunarcore.game.rogue;
 
-import emu.lunarcore.proto.RogueMiracleDataInfoOuterClass.RogueMiracleDataInfo;
-import emu.lunarcore.proto.RogueMiracleDataOuterClass;
 import emu.lunarcore.proto.RogueMiracleOuterClass.RogueMiracle;
 import lombok.Getter;
 
@@ -18,20 +16,6 @@ public class RogueMiracleData {
     public RogueMiracle toProto() {
         var proto = RogueMiracle.newInstance()
                 .setMiracleId(this.getId());
-        
-        return proto;
-    }
-    
-    public RogueMiracleDataInfo toInfoProto() {
-        var proto = RogueMiracleDataInfo.newInstance()
-                .setMiracleId(this.getId());
-        
-        return proto;
-    }
-    
-    public RogueMiracleDataOuterClass.RogueMiracleData toDataProto() {
-        var proto = RogueMiracleDataOuterClass.RogueMiracleData.newInstance();
-        proto.setRogueMiracle(this.toProto());
         
         return proto;
     }

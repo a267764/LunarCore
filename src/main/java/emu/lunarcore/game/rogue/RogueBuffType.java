@@ -14,11 +14,10 @@ public enum RogueBuffType {
     Remembrance     (121),
     Nihility        (122),
     Abundance       (123),
-    TheHunt         (124),
+    Hunt            (124),
     Destruction     (125),
     Elation         (126),
-    Propagation     (127),
-    Erudition       (128);
+    Propagation     (127);
     
     private final int val;
     @Setter private int battleEventSkill;

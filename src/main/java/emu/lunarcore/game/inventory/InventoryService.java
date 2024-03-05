@@ -4,18 +4,19 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import emu.lunarcore.GameConstants;
 import emu.lunarcore.data.GameData;
 import emu.lunarcore.data.GameDepot;
 import emu.lunarcore.data.common.ItemParam;
 import emu.lunarcore.data.excel.*;
 import emu.lunarcore.data.excel.ItemComposeExcel.FormulaType;
 import emu.lunarcore.game.avatar.GameAvatar;
-import emu.lunarcore.game.enums.ItemRarity;
 import emu.lunarcore.game.player.Player;
 import emu.lunarcore.server.game.BaseGameService;
 import emu.lunarcore.server.game.GameServer;
 import emu.lunarcore.server.packet.send.*;
+
+import it.unimi.dsi.fastutil.ints.Int2IntMap;
+import it.unimi.dsi.fastutil.ints.Int2IntOpenHashMap;
 
 public class InventoryService extends BaseGameService {
 
@@ -85,7 +86,7 @@ public class InventoryService extends BaseGameService {
         player.save();
 
         // Calculate leftover exp
-        var leftoverItems = new ItemParamMap();
+        Int2IntMap leftoverItems = new Int2IntOpenHashMap();
         
         while (GameDepot.getAvatarExpExcels().size() > 0) {
             int oldAmount = amount;
@@ -100,7 +101,12 @@ public class InventoryService extends BaseGameService {
         }
         
         // Create leftover exp items
-        List<GameItem> returnItems = player.getInventory().addItems(leftoverItems);
+        List<GameItem> returnItems = leftoverItems.int2IntEntrySet()
+                .stream()
+                .map(e -> new GameItem(e.getIntKey(), e.getIntValue()))
+                .toList();
+        
+        player.getInventory().addItems(returnItems);
 
         // Send packets
         player.sendPacket(new PacketPlayerSyncScNotify(avatar));
@@ -307,7 +313,7 @@ public class InventoryService extends BaseGameService {
         player.save();
 
         // Calculate leftover exp
-        var leftoverItems = new ItemParamMap();
+        Int2IntMap leftoverItems = new Int2IntOpenHashMap();
         
         while (GameDepot.getEquipmentExpExcels().size() > 0) {
             int oldAmount = amount;
@@ -322,7 +328,12 @@ public class InventoryService extends BaseGameService {
         }
         
         // Create leftover exp items
-        List<GameItem> returnItems = player.getInventory().addItems(leftoverItems);
+        List<GameItem> returnItems = leftoverItems.int2IntEntrySet()
+                .stream()
+                .map(e -> new GameItem(e.getIntKey(), e.getIntValue()))
+                .toList();
+        
+        player.getInventory().addItems(returnItems);
 
         // Send packets
         player.sendPacket(new PacketPlayerSyncScNotify(equip));
@@ -486,7 +497,7 @@ public class InventoryService extends BaseGameService {
         player.save();
 
         // Calculate leftover exp
-        var leftoverItems = new ItemParamMap();
+        Int2IntMap leftoverItems = new Int2IntOpenHashMap();
 
         while (GameDepot.getRelicExpExcels().size() > 0) {
             int oldAmount = amount;
@@ -501,7 +512,12 @@ public class InventoryService extends BaseGameService {
         }
         
         // Create leftover exp items
-        List<GameItem> returnItems = player.getInventory().addItems(leftoverItems);
+        List<GameItem> returnItems = leftoverItems.int2IntEntrySet()
+                .stream()
+                .map(e -> new GameItem(e.getIntKey(), e.getIntValue()))
+                .toList();
+        
+        player.getInventory().addItems(returnItems);
 
         // Send packets
         player.sendPacket(new PacketPlayerSyncScNotify(equip));
@@ -510,52 +526,34 @@ public class InventoryService extends BaseGameService {
 
     // === Etc ===
 
-    public void lockItem(Player player, int equipId, boolean locked) {
-        GameItem item = player.getInventory().getItemByUid(equipId);
-        if (item == null || !item.getExcel().isEquippable()) {
+    public void lockEquip(Player player, int equipId, boolean locked) {
+        GameItem equip = player.getInventory().getItemByUid(equipId);
+
+        if (equip == null || !equip.getExcel().isEquippable()) {
             return;
         }
 
-        item.setLocked(locked);
-        item.save();
+        equip.setLocked(locked);
+        equip.save();
 
         //  Send packet
-        player.sendPacket(new PacketPlayerSyncScNotify(item));
-    }
-    
-    public void discardRelic(Player player, int equipId, boolean discarded) {
-        GameItem relic = player.getInventory().getItemByUid(equipId);
-        if (relic == null || !relic.getExcel().isRelic()) {
-            return;
-        }
-
-        relic.setDiscarded(discarded);
-        relic.save();
-
-        //  Send packet
-        player.sendPacket(new PacketPlayerSyncScNotify(relic));
+        player.sendPacket(new PacketPlayerSyncScNotify(equip));
     }
 
-    public List<GameItem> sellItems(Player player, boolean toMaterials, List<ItemParam> items) {
+    public Int2IntMap sellItems(Player player, List<ItemParam> items) {
         // Verify items
-        var returnItems = new ItemParamMap();
+        var returnItems = new Int2IntOpenHashMap();
 
         for (ItemParam param : items) {
-            // Get item in inventory
             GameItem item = player.getInventory().getItemByParam(param);
             if (item == null || item.isLocked() || item.getCount() < param.getCount()) {
                 return null;
             }
 
             // Add return items
-            if (item.getExcel().getRarity() == ItemRarity.SuperRare && !toMaterials) {
-                // Relic remains
-                returnItems.addTo(GameConstants.RELIC_REMAINS_ID, 10);
-            } else {
-                // Add basic return items
-                for (ItemParam ret : item.getExcel().getReturnItemIDList()) {
-                    returnItems.addTo(ret.getId(), ret.getCount());
-                }
+            for (ItemParam ret : item.getExcel().getReturnItemIDList()) {
+                // Add to return items
+                returnItems.put(ret.getId(), returnItems.getOrDefault(ret.getId(), 0) + ret.getCount());
             }
         }
 
@@ -563,7 +561,12 @@ public class InventoryService extends BaseGameService {
         player.getInventory().removeItemsByParams(items);
 
         // Add return items
-        return player.getInventory().addItems(returnItems);
+        for (var returnItem : returnItems.int2IntEntrySet()) {
+            player.getInventory().addItem(returnItem.getIntKey(), returnItem.getIntValue());
+        }
+
+        // Done
+        return returnItems;
     }
     
     public List<GameItem> composeItem(Player player, int composeId, int count, List<ItemParam> costItems) {

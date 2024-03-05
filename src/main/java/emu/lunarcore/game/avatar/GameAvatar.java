@@ -2,6 +2,7 @@ package emu.lunarcore.game.avatar;
 
 import java.util.Map;
 
+import emu.lunarcore.proto.HealthBarInfoOuterClass;
 import org.bson.types.ObjectId;
 import dev.morphia.annotations.Entity;
 import dev.morphia.annotations.Id;
@@ -44,16 +45,16 @@ public class GameAvatar implements GameEntity {
 
     private transient Player owner;
     private transient AvatarExcel excel;
-    
+
     private int avatarId; // Id of avatar in the excels
     private AvatarData data;
     @Setter private int level;
     @Setter private int exp;
     @Setter private int promotion;
-    
+
     private int rewards; // Previously known as "taken rewards"
     private long timestamp;
-    
+
     @Getter(AccessLevel.NONE) private int currentHp;
     @Getter(AccessLevel.NONE) private int currentSp;
     @Getter(AccessLevel.NONE) private int extraLineupHp;
@@ -72,7 +73,7 @@ public class GameAvatar implements GameEntity {
         this.currentHp = 10000;
         this.currentSp = 0;
     }
-    
+
     public GameAvatar(int avatarId) {
         this(GameData.getAvatarExcelMap().get(avatarId));
     }
@@ -83,19 +84,19 @@ public class GameAvatar implements GameEntity {
         this.timestamp = System.currentTimeMillis() / 1000;
         this.setExcel(excel);
     }
-    
+
     public GameAvatar(AvatarHeroPath path) {
         this();
         this.avatarId = GameConstants.TRAILBLAZER_AVATAR_ID;
         this.timestamp = System.currentTimeMillis() / 1000;
         this.setHeroPath(path);
     }
-    
+
     @Override
     public Scene getScene() {
         return this.getOwner().getScene();
     }
-    
+
     public void setExcel(AvatarExcel excel) {
         if (this.excel == null) {
             this.excel = excel;
@@ -109,26 +110,26 @@ public class GameAvatar implements GameEntity {
         this.owner = player;
         this.ownerUid = player.getUid();
     }
-    
+
     @Override
     public void setEntityId(int entityId) {
         this.entityId = entityId;
     }
-    
+
     @Override
     public Position getPos() {
         return this.getOwner().getPos();
     }
-    
+
     @Override
     public Position getRot() {
         return this.getOwner().getRot();
     }
-    
+
     public int getHeadIconId() {
         return 200000 + this.getAvatarId();
     }
-    
+
     public boolean isHero() {
         return GameData.getHeroExcelMap().containsKey(this.getAvatarId());
     }
@@ -136,33 +137,33 @@ public class GameAvatar implements GameEntity {
     public int getMaxSp() {
         return 10000;
     }
-    
+
     public int getCurrentHp(PlayerLineup lineup) {
         return !lineup.isExtraLineup() ? this.currentHp : this.extraLineupHp;
     }
-    
+
     public int getCurrentSp(PlayerLineup lineup) {
         return !lineup.isExtraLineup() ? this.currentSp : this.extraLineupSp;
     }
-    
+
     public void setCurrentHp(PlayerLineup lineup, int amount) {
         amount = Math.max(Math.min(amount, 10000), 0);
         if (!lineup.isExtraLineup()) {
-            this.currentHp = amount; 
+            this.currentHp = amount;
         } else {
-            this.extraLineupHp = amount; 
+            this.extraLineupHp = amount;
         }
     }
 
     public void setCurrentSp(PlayerLineup lineup, int amount) {
         amount = Math.max(Math.min(amount, getMaxSp()), 0);
         if (!lineup.isExtraLineup()) {
-            this.currentSp = amount; 
+            this.currentSp = amount;
         } else {
-            this.extraLineupSp = amount; 
+            this.extraLineupSp = amount;
         }
     }
-    
+
     public boolean isAlive() {
         return this.isAlive(this.getOwner().getCurrentLineup());
     }
@@ -170,52 +171,52 @@ public class GameAvatar implements GameEntity {
     public boolean isAlive(PlayerLineup lineup) {
         return this.getCurrentHp(lineup) > 0;
     }
-    
+
     public int getRank() {
         return this.getData().getRank();
     }
-    
+
     public void setRank(int rank) {
         this.getData().setRank(rank);
     }
-    
+
     public Map<Integer, Integer> getSkills() {
         return this.getData().getSkills();
     }
-    
+
     public void setHeroPath(AvatarHeroPath heroPath) {
         // Clear prev set hero path from avatar
         if (this.getHeroPath() != null) {
             this.getHeroPath().setAvatar(null);
         }
-        
+
         this.data = heroPath.getData();
         this.excel = heroPath.getExcel(); // DO NOT USE GameAvatar::setExcel for this
         this.heroPath = heroPath;
         this.heroPath.setAvatar(this);
     }
-    
+
     // Rewards
-    
+
     public boolean setRewards(int flag) {
         if (this.rewards != flag) {
             this.rewards = flag;
             return true;
         }
-        
+
         return false;
     }
-    
+
     public boolean hasTakenReward(int promotion) {
         return (this.rewards & (1 << promotion)) != 0;
     }
-    
+
     public void takeReward(int promotion) {
         this.rewards |= 1 << promotion;
     }
-    
+
     // Buffs
-    
+
     public void addBuff(int buffId, int duration) {
         this.buffs.put(buffId, System.currentTimeMillis() + (duration * 1000));
     }
@@ -303,13 +304,13 @@ public class GameAvatar implements GameEntity {
         for (var skill : getSkills().entrySet()) {
             proto.addSkilltreeList(AvatarSkillTree.newInstance().setPointId(skill.getKey()).setLevel(skill.getValue()));
         }
-        
+
         for (int i = 0; i < this.getPromotion(); i++) {
             if (this.hasTakenReward(i)) {
                 proto.addTakenRewards(i);
             }
         }
-        
+
         return proto;
     }
 
@@ -320,7 +321,7 @@ public class GameAvatar implements GameEntity {
                 .setSpBar(SpBarInfo.newInstance().setCurSp(this.getCurrentSp(lineup)).setMaxSp(this.getMaxSp()))
                 .setHp(this.getCurrentHp(lineup))
                 .setSlot(slot);
-        
+
         return proto;
     }
 
