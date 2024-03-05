@@ -26,7 +26,7 @@ public class GameServerPacketHandler {
             if (opcode == null || opcode.disabled() || opcode.value() <= 0) {
                 return;
             }
-            
+
             this.handlers.put(opcode.value(), handlerClass.getDeclaredConstructor().newInstance());
         } catch (Exception e) {
             e.printStackTrace();
@@ -46,12 +46,14 @@ public class GameServerPacketHandler {
 
     public void handle(GameSession session, int cmdId, byte[] data) {
         PacketHandler handler = this.handlers.get(cmdId);
-
+        if (cmdId != CmdId.PlayerHeartBeatCsReq) {
+            LunarCore.getLogger().info("recevie a packet " + CmdIdUtils.getCmdIdName(cmdId));
+        }
         if (handler != null) {
             // Check cooldown to prevent packet spam
             long timestamp = System.currentTimeMillis();
             if (session.getPacketCooldown().get(cmdId) >= timestamp && !CmdIdUtils.ALLOWED_FILTER_PACKETS.contains(cmdId)) {
-                //LunarCore.getLogger().warn("Dropped a packet " + CmdIdUtils.getCmdIdName(cmdId));
+                LunarCore.getLogger().warn("Dropped a packet " + CmdIdUtils.getCmdIdName(cmdId));
                 return;
             } else {
                 session.getPacketCooldown().put(cmdId, timestamp + 5);
@@ -64,6 +66,7 @@ public class GameServerPacketHandler {
                 if (cmdId == CmdId.PlayerHeartBeatCsReq) {
                     // Always continue if packet is ping request
                 } else if (cmdId == CmdId.PlayerGetTokenCsReq) {
+                    LunarCore.getLogger().info("recevie PlayerGetTokenCsReq");
                     if (state != SessionState.WAITING_FOR_TOKEN) {
                         return;
                     }
@@ -76,7 +79,7 @@ public class GameServerPacketHandler {
                         return;
                     }
                 }
-                
+
                 // Handle packet
                 handler.handle(session, data);
             } catch (Exception ex) {
@@ -85,6 +88,6 @@ public class GameServerPacketHandler {
         }
 
         // Log unhandled packets
-        //LunarCore.getLogger().info("Unhandled packet (" + cmdId + "): " + CmdIdUtils.getOpcodeName(cmdId));
+        // LunarCore.getLogger().info("Unhandled packet (" + cmdId + "): " + CmdIdUtils.getOpcodeName(cmdId));
     }
 }
