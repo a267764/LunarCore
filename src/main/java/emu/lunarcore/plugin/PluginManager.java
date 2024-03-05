@@ -38,7 +38,6 @@ public final class PluginManager {
      * Loads all plugins from the plugins directory.
      * This can only be called once.
      */
-    @SuppressWarnings("resource")
     public void loadPlugins() throws IOException {
         if (this.pluginsLoaded)
             throw new IllegalStateException("Plugins have already been loaded.");
@@ -144,7 +143,6 @@ public final class PluginManager {
                     ));
                 } else try {
                     pluginInstance.onLoad();
-                    this.plugins.put(pluginInstance.getName(), pluginInstance);
                 } catch (Throwable exception) {
                     this.getLogger().warn("Failed to load plugin {}.", pluginFile.getName());
                 }
@@ -181,7 +179,6 @@ public final class PluginManager {
 
                 // Load the plugin.
                 pluginData.instance().onLoad();
-                this.plugins.put(pluginData.instance().getName(), pluginData.instance());
             } catch (Throwable exception) {
                 this.getLogger().warn("Failed to load plugin {}.", exception.getMessage());
                 depth++;
