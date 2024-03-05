@@ -15,13 +15,16 @@ public class PacketGetMissionStatusScRsp extends BasePacket {
         var data = GetMissionStatusScRsp.newInstance();
 
         for (int missionId : req.getMainMissionIdList()) {
-            data.addFinishedMainMissionIdList(missionId);
+            if (missionId != 8021103 && missionId != 8021106) {
+                data.addFinishedMainMissionIdList(missionId);
+            }
         }
 
         for (int missionId : req.getSubMissionIdList()) {
             var mission = Mission.newInstance()
-                    .setId(missionId)
-                    .setStatus(MissionStatus.MISSION_FINISH);
+                .setId(missionId)
+                .setProgress(0)
+                .setStatus(MissionStatus.MISSION_FINISH);
 
             data.addSubMissionStatusList(mission);
         }
